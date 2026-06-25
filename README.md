@@ -1,4 +1,4 @@
-#Python Asynchronous BitTorrent Client
+# Python Asynchronous BitTorrent Client
 
 An experimental, fully-asynchronous BitTorrent client written from scratch in Python 3. 
 
