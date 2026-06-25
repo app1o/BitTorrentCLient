@@ -1,124 +1,68 @@
-# pieces
+# Pieces - Python Asynchronous BitTorrent Client
 
-An experimental BitTorrent client implemented in Python 3 using asyncio.
+An experimental, fully-asynchronous BitTorrent client written from scratch in Python 3. 
 
-The client is not a practical BitTorrent client, it lacks too many
-features to really be useful. It was implemented for fun in order to
-learn more about BitTorrent as well as Python's asyncio library.
+This project was built to explore and implement the BitTorrent protocol (specifically the Bencoding format, tracker communication, and peer-to-peer message flow) leveraging modern Python features such as `asyncio` and static type hinting.
 
-See http://markuseliasson.se/article/bittorrent-in-python/ for a walkthrough
-on the BitTorrent protocol and how pieces works under the hood.
+## Features
+- **Asynchronous Architecture:** Built using `asyncio` for non-blocking network operations and concurrency.
+- **Bencoding Implementation:** Custom encoders and decoders for parsing `.torrent` files and BitTorrent messages.
+- **Tracker Communication:** Connects to HTTP/UDP trackers to retrieve active peer lists.
+- **Peer-to-Peer Protocol:** Establishes concurrent connections with remote peers.
+- **Streaming Decoders:** Uses Python async iterators to continuously stream and decode binary data from raw sockets into standard message objects.
+- **Piece Management:** Manages downloaded pieces and handles the assembly of the target file.
 
-The client currently only support downloading of data, although adding
-the remaining features regarding seeding and multi-file should not be
-that hard.
+## Getting Started
 
-Current features:
+### Prerequisites
+- Python 3.5+
+- (Optional) `make` for running utility scripts
 
-- [x] Download pieces (leeching)
-- [x] Contact tracker periodically
-- [ ] Seed (upload) pieces
-- [ ] Support multi-file torrents
-- [ ] Resume a download
+### Installation
+Clone the repository and install the required dependencies:
 
-Even though it's not practical at this point, feel free to learn from
-it, steal from it, improve it, laugh at it or just ignore it.
+```bash
+git clone https://github.com/app1o/BitTorrentCLient.git
+cd BitTorrentCLient
+make init
+```
 
-Known issues:
+### Running the Client
 
-* Sometimes the client hangs at startup. It seems to relate to the
-  number of concurrent peer connections.
+To download a torrent, simply run the client and pass the path to your `.torrent` file:
 
+```bash
+python pieces.py -v path/to/your/file.torrent
+```
 
-## Getting started
+For example, using the provided test torrent:
 
-Install the needed dependencies and run the unit tests with:
+```bash
+python pieces.py -v tests/data/bootfloppy-utils.img.torrent
+```
 
-    $ make init
-    $ make test
+*Note: The client can be stopped gracefully at any time using `Ctrl + C`.*
 
-In order to download a torrent file, run this command:
+### Running Tests
 
-    $ python pieces.py -v tests/data/bootfloppy-utils.img.torrent
+To run the unit test suite:
 
-If everything goes well, your torrent should be downloaded and the
-program terminated. You can stop the client using `Ctrl + C`.
+```bash
+make test
+```
 
+## Architecture
 
-## Design considerations
+The project is structured around several key components:
 
-The purpose with implementing this client was to learn myself some
-`asyncio` (and other Python 3.5 features, such as _type hinting_)
-together with my old itch of implementing the BitTorrent protocol.
+- **`TorrentClient`**: The central controller that coordinates tracker communication, peer queuing, and shutdown sequences.
+- **`PieceManager`**: Handles the logic for requesting pieces and reassembling the downloaded file in memory.
+- **`protocol.py`**: Manages the peer connections, control flow, and message passing.
+- **`bencoding.py`**: A robust implementation of the BitTorrent Bencoding specification.
 
-Thus, the code have been written to be as clear and simple as possible,
-not bothering about efficiency or performance. E.g. the pieces are all
-requested in order, not implementing a _rares first_ algorithm, and the
-pieces are all kept in memory until the entire torrent is downloaded.
+## Disclaimer
 
+This client is currently experimental and primarily built for educational purposes. It focuses on downloading (leeching) and currently lacks advanced features like seeding, resuming partial downloads, or advanced piece-selection algorithms (e.g., rarest-first). 
 
-### Code walkthrough
-
-The `pieces.client.TorrentClient` is the center piece, it:
-
-* Connects to the tracker in order to receive the peers to connect to.
-
-* Based on that result, creates a Queue of peers that can be connected
-  to.
-
-* Determine the order in which the pieces should be requested from the
-  remote peers.
-
-* Shuts down the client once the download is complete.
-
-
-The strategy on which piece to request next and the assembly of
-retrieved pieces is implemented in the `pieces.client.PieceManager`. As
-previously stated, the strategy implemented is the simplest one
-possible.
-
-Notice, the file writing is synchronous something that could be
-improved.
-
-The BitTorrent specifics is implemented in the `pieces.protocol` module
-where the `pieces.protocol.PeerConnection` sets up a connection to one
-of the remote peers retrieved from the tracker. This class handles the
-control flow of messages between the two peers.
-
-BitTorrent is a binary protocol, and all decoding of messages is
-implemented as a _async iterator_ under he name
-`pieces.protocol.PeerStreamIterator`. The async part is that this
-iterator will keep reading and parsing the raw data received from the
-socket until the connection is closed.
-
-Each of BitTorrents messages is implemented as separate classes, each
-with a `encode` and a `decode` method. However, since this client
-currently does not support seeding - not all of the messages goes in
-both ways.
-
-
-## References
-
-There is plenty of information on how to write a BitTorrent client
-available on the Internet. These two articles were the real enablers
-for my implementation:
-
-* http://www.kristenwidman.com/blog/33/how-to-write-a-bittorrent-client-part-1/
-
-* https://wiki.theory.org/BitTorrentSpecification
-
-Asyncio is fairly new and I have not seen that many articles about it,
-at least not where the code examples are a little bit more elaborate
-than having a few coroutines sleep. Out of the ones I read and can
-recommend these are on the top of my list:
-
-* http://www.snarky.ca/how-the-heck-does-async-await-work-in-python-3-5
-
-* http://www.pythonsandbarracudas.com/blog/2015/11/22/developing-a-computational-pipeline-using-the-asyncio-module-in-python-3
-
-* http://dabeaz.com/coroutines/Coroutines.pdf
-
-
-# License
-
-The client is released under the Apache v2 license, see LICENCE.
+---
+*Created for educational exploration of asynchronous programming and P2P networks.*
