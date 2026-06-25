@@ -1,19 +1,3 @@
-#
-# pieces - An experimental BitTorrent client
-#
-# Copyright 2016 markus.eliasson@gmail.com
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 import aiohttp
 import random
 import logging
@@ -80,7 +64,7 @@ class TrackerResponse:
         # where the peers field is a list of dictionaries and one where all
         # the peers are encoded in a single string
         peers = self.response[b'peers']
-        if type(peers) == list:
+        if isinstance(peers, list):
             # TODO Implement support for dictionary peer list
             logging.debug('Dictionary model peers are returned by tracker')
             raise NotImplementedError()
@@ -115,7 +99,7 @@ class Tracker:
     def __init__(self, torrent):
         self.torrent = torrent
         self.peer_id = _calculate_peer_id()
-        self.http_client = aiohttp.ClientSession()
+        self.http_client = None
 
     async def connect(self,
                       first: bool = None,
@@ -132,6 +116,9 @@ class Tracker:
         :param uploaded: The total number of bytes uploaded
         :param downloaded: The total number of bytes downloaded
         """
+        if self.http_client is None:
+            self.http_client = aiohttp.ClientSession()
+
         params = {
             'info_hash': self.torrent.info_hash,
             'peer_id': self.peer_id,
@@ -148,26 +135,33 @@ class Tracker:
 
         async with self.http_client.get(url) as response:
             if not response.status == 200:
-                raise ConnectionError('Unable to connect to tracker: status code {}'.format(response.status))
+                raise ConnectionError(
+                    'Unable to connect to tracker: status code {}'.format(
+                        response.status))
             data = await response.read()
             self.raise_for_error(data)
             return TrackerResponse(bencoding.Decoder(data).decode())
 
-    def close(self):
-        self.http_client.close()
+    async def close(self):
+        if self.http_client:
+            await self.http_client.close()
 
     def raise_for_error(self, tracker_response):
         """
-        A (hacky) fix to detect errors by tracker even when the response has a status code of 200  
+        A (hacky) fix to detect errors by tracker even when the response
+        has a status code of 200
         """
         try:
-            # a tracker response containing an error will have a utf-8 message only.
-            # see: https://wiki.theory.org/index.php/BitTorrentSpecification#Tracker_Response
+            # a tracker response containing an error will have a utf-8
+            # message only.
+            # see: https://wiki.theory.org/index.php/BitTorrentSpecification
             message = tracker_response.decode("utf-8")
             if "failure" in message:
-                raise ConnectionError('Unable to connect to tracker: {}'.format(message))
+                raise ConnectionError(
+                    'Unable to connect to tracker: {}'.format(message))
 
-        # a successful tracker response will have non-uncicode data, so it's a safe to bet ignore this exception.
+        # a successful tracker response will have non-unicode data,
+        # so it's a safe bet to ignore this exception.
         except UnicodeDecodeError:
             pass
 

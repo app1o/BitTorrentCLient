@@ -1,19 +1,3 @@
-#
-# pieces - An experimental BitTorrent client
-#
-# Copyright 2016 markus.eliasson@gmail.com
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 
 from collections import OrderedDict
 
@@ -160,15 +144,15 @@ class Encoder:
         return self.encode_next(self._data)
 
     def encode_next(self, data):
-        if type(data) == str:
+        if isinstance(data, str):
             return self._encode_string(data)
-        elif type(data) == int:
+        elif isinstance(data, int):
             return self._encode_int(data)
-        elif type(data) == list:
+        elif isinstance(data, list):
             return self._encode_list(data)
-        elif type(data) == dict or type(data) == OrderedDict:
+        elif isinstance(data, dict) or isinstance(data, OrderedDict):
             return self._encode_dict(data)
-        elif type(data) == bytes:
+        elif isinstance(data, bytes):
             return self._encode_bytes(data)
         else:
             return None

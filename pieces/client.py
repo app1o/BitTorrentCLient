@@ -1,19 +1,3 @@
-#
-# pieces - An experimental BitTorrent client
-#
-# Copyright 2016 markus.eliasson@gmail.com
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 
 import asyncio
 import logging
@@ -117,7 +101,7 @@ class TorrentClient:
         for peer in self.peers:
             peer.stop()
         self.piece_manager.close()
-        self.tracker.close()
+        asyncio.ensure_future(self.tracker.close())
 
     def _on_block_retrieved(self, peer_id, piece_index, block_offset, data):
         """
@@ -209,7 +193,7 @@ class Piece:
         :return: True or False
         """
         blocks = [b for b in self.blocks if b.status is not Block.Retrieved]
-        return len(blocks) is 0
+        return len(blocks) == 0
 
     def is_hash_matching(self):
         """
@@ -232,6 +216,7 @@ class Piece:
         retrieved = sorted(self.blocks, key=lambda b: b.offset)
         blocks_data = [b.data for b in retrieved]
         return b''.join(blocks_data)
+
 
 # The type used for keeping track of pending request that can be re-issued
 PendingRequest = namedtuple('PendingRequest', ['block', 'added'])
